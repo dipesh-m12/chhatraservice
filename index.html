@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Update Admin Role</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        padding: 20px;
+      }
+
+      .container {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 500px;
+        margin: 10px;
+      }
+
+      h2 {
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        text-align: center;
+        font-size: 1.8rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #34495e;
+        font-weight: 500;
+        font-size: 1rem;
+      }
+
+      input[type="email"] {
+        width: 100%;
+        padding: 0.8rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+      }
+
+      input[type="email"]:focus {
+        outline: none;
+        border-color: #4caf50;
+        box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+      }
+
+      button {
+        width: 100%;
+        padding: 0.8rem;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover:not(:disabled) {
+        background-color: #45a049;
+      }
+
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+
+      .status-message {
+        margin-top: 1rem;
+        padding: 0.8rem;
+        border-radius: 8px;
+        text-align: center;
+        display: none;
+      }
+
+      .status-message.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .status-message.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      /* Loading spinner */
+      .spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 1s ease-in-out infinite;
+        margin-left: 8px;
+        display: none;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Responsive adjustments */
+      @media screen and (max-width: 480px) {
+        .container {
+          padding: 1.5rem;
+        }
+
+        h2 {
+          font-size: 1.5rem;
+        }
+
+        input[type="email"],
+        button {
+          padding: 0.7rem;
+        }
+      }
+
+      @media screen and (max-width: 320px) {
+        .container {
+          padding: 1rem;
+        }
+
+        h2 {
+          font-size: 1.3rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Update User to Admin</h2>
+      <div class="form-group">
+        <label for="email">User Email:</label>
+        <input
+          type="email"
+          id="email"
+          placeholder="Enter user email"
+          autocomplete="email"
+        />
+      </div>
+      <button id="updateButton" onclick="updateToAdmin()">
+        Update to Admin
+        <span class="spinner" id="spinner"></span>
+      </button>
+      <div id="statusMessage" class="status-message"></div>
+    </div>
+
+    <script>
+      async function updateToAdmin() {
+        const emailInput = document.getElementById("email");
+        const button = document.getElementById("updateButton");
+        const spinner = document.getElementById("spinner");
+        const statusMessage = document.getElementById("statusMessage");
+        const email = emailInput.value.trim();
+
+        if (!email) {
+          showStatus("Please enter an email address", false);
+          return;
+        }
+
+        // Disable button and show loading state
+        button.disabled = true;
+        spinner.style.display = "inline-block";
+        button.textContent = "Updating...";
+        spinner.style.display = "inline-block";
+        statusMessage.style.display = "none";
+
+        try {
+          const response = await fetch(
+            "http://localhost:5000/api/userProfile/make-admin",
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ email }),
+            }
+          );
+
+          const data = await response.json();
+
+          if (data.success) {
+            showStatus(data.message, true);
+            emailInput.value = ""; // Clear input on success
+          } else {
+            showStatus(data.message, false);
+          }
+        } catch (error) {
+          showStatus("Failed to connect to the server", false);
+          console.error("Error:", error);
+        } finally {
+          // Re-enable button and restore original text
+          button.disabled = false;
+          button.textContent = "Update to Admin";
+          spinner.style.display = "none";
+        }
+      }
+
+      function showStatus(message, isSuccess) {
+        const statusMessage = document.getElementById("statusMessage");
+        statusMessage.textContent = message;
+        statusMessage.className =
+          "status-message " + (isSuccess ? "success" : "error");
+        statusMessage.style.display = "block";
+      }
+    </script>
+  </body>
+</html>
